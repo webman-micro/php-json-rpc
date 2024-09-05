@@ -77,7 +77,14 @@ class Client
             }
 
             fclose($resource);
-            return MessagePack::unpack($result);
+            $res = MessagePack::unpack($result);
+
+            if (!empty($res['code']) && $res['code'] !== 200) {
+                throw new RpcResponseException(Error::make($res['code'], $res['msg']));
+            }
+
+            return $res;
+
         } catch (\Throwable $throwable) {
             throw new RpcUnexpectedValueException('rpc request failed: ' . $throwable->getMessage());
         }
