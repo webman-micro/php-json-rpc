@@ -1,0 +1,14 @@
+{
+  "name": "webman-micro/php-json-rpc",
+  "type": "library",
+  "license": "MIT",
+  "description": "Webman plugin webman-micro/php-json-rpc",
+  "require": {
+    "webman-micro/php-service-discovery": "^0.1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "WebmanMicro\\PhpJsonRpc\\": "src"
+    }
+  }
+}
