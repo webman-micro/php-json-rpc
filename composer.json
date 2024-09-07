@@ -5,6 +5,7 @@
   "description": "Webman plugin webman-micro/php-json-rpc",
   "require": {
     "php": ">=7.4",
+    "ext-msgpack": "*",
     "workerman/workerman": "^4.0.4 || ^5.0.0",
     "webman-micro/php-service-discovery": ">=0.1.0",
     "webman-micro/php-breaker": ">=0.1.0",
