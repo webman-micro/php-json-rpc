@@ -7,13 +7,14 @@ use WebmanMicro\PhpJsonRpc\Exception\RpcResponseException;
 use WebmanMicro\PhpJsonRpc\Exception\RpcUnexpectedValueException;
 use MessagePack\MessagePack;
 use WebmanMicro\PhpServiceDiscovery\Etcd\Discovery;
+use WebmanMicro\PhpBreaker\BreakerFactory;
 
 class Client
 {
     /**
      * @var string
      */
-    private $serverName;
+    private string $serverName;
 
     /**
      * Client constructor.
@@ -51,41 +52,53 @@ class Client
             // 根据服务名获取服务地址
             [$class, $method] = explode('/', $method);
 
-            $resource = stream_socket_client($this->setServerHost($this->serverName), $errno, $errorMessage);
-            if (false === $resource) {
-                throw new RpcUnexpectedValueException('rpc failed to connect: ' . $errorMessage);
+            if (BreakerFactory::isAvailable($this->serverName)) {
+                $resource = stream_socket_client($this->setServerHost($this->serverName), $errno, $errorMessage);
+                if (false === $resource) {
+                    throw new RpcUnexpectedValueException('rpc failed to connect: ' . $errorMessage);
+                }
+
+                // 如果param数组里面存在timeout参数，就设置超时时间
+                $timeout = $param['timeout'] ?? 0;
+                if ($timeout > 0) {
+                    stream_set_timeout($resource, $timeout);
+                }
+
+                $param = [
+                    'class' => $class,
+                    'method' => $method,
+                    'args' => $arg
+                ];
+                fwrite($resource, MessagePack::pack($param) . "\n");
+                $result = fgets($resource, 10240000);
+
+                // 检查是否超时,并报超时异常
+                $info = stream_get_meta_data($resource);
+                if ($info['timed_out']) {
+                    // 请求失败设置
+                    BreakerFactory::failure($this->serverName);
+                    throw new RpcResponseException(Error::make(408, 'rpc request timeout'));
+                }
+
+                fclose($resource);
+                $res = MessagePack::unpack($result);
+
+                if (!empty($res['code']) && $res['code'] !== 200) {
+                    // 请求失败设置
+                    BreakerFactory::failure($this->serverName);
+                    throw new RpcResponseException(Error::make($res['code'], $res['msg']));
+                }
+
+                // 请求成功设置
+                BreakerFactory::success($this->serverName);
+                return $res;
+            } else {
+                throw new RpcResponseException(Error::make(500, $this->serverName . ' service is unavailable'));
             }
-
-            // 如果param数组里面存在timeout参数，就设置超时时间
-            $timeout = $param['timeout'] ?? 0;
-            if ($timeout > 0) {
-                stream_set_timeout($resource, $timeout);
-            }
-
-            $param = [
-                'class' => $class,
-                'method' => $method,
-                'args' => $arg
-            ];
-            fwrite($resource, MessagePack::pack($param) . "\n");
-            $result = fgets($resource, 10240000);
-
-            // 检查是否超时,并报超时异常
-            $info = stream_get_meta_data($resource);
-            if ($info['timed_out']) {
-                throw new RpcResponseException(Error::make(408, 'rpc request timeout'));
-            }
-
-            fclose($resource);
-            $res = MessagePack::unpack($result);
-
-            if (!empty($res['code']) && $res['code'] !== 200) {
-                throw new RpcResponseException(Error::make($res['code'], $res['msg']));
-            }
-
-            return $res;
 
         } catch (\Throwable $throwable) {
+            // 请求失败设置
+            BreakerFactory::failure($this->serverName);
             throw new RpcUnexpectedValueException('rpc request failed: ' . $throwable->getMessage());
         }
     }
