@@ -42,15 +42,15 @@ class Client
 
     /**
      * 请求数据
-     * @param string $method
+     * @param string $callFunc
      * @param array $arg
      * @return mixed
      */
-    public function request(string $method, array $arg)
+    public function request(string $callFunc, array $arg)
     {
         try {
             // 根据服务名获取服务地址
-            [$class, $method] = explode('/', $method);
+            [$class, $method] = explode('/', $callFunc);
 
             if (BreakerFactory::isAvailable($this->serverName)) {
                 $resource = stream_socket_client($this->setServerHost($this->serverName), $errno, $errorMessage);
