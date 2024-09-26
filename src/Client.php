@@ -91,7 +91,7 @@ class Client
 
                 // 请求成功设置
                 BreakerFactory::success($this->serverName);
-                return $res;
+                return $res['data'];
             } else {
                 throw new RpcResponseException(Error::make(500, $this->serverName . ' service is unavailable'));
             }
