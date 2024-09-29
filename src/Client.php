@@ -61,7 +61,7 @@ class Client
     /**
      * 请求数据
      * @param string $callFunc
-     * @param array $arg
+     * @param array $args
      * @return mixed
      */
     public function request(string $callFunc, array $args)

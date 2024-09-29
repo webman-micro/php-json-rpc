@@ -42,6 +42,24 @@ class ResponseParser
     const INTERNAL_ERROR = 32603;
 
     /**
+     * 强制把整形转成字符串
+     * @param $args
+     * @return void
+     */
+    protected static function convertIntToString(&$args)
+    {
+        foreach ($args as &$arg) {
+            if (is_array($arg)) {
+                self::convertIntToString($arg);
+            } else {
+                if (is_numeric($arg)) {
+                    $arg = (string)$arg;
+                }
+            }
+        }
+    }
+
+    /**
      * @desc 编码返回数据
      * @param int $code
      * @param string $msg
@@ -50,10 +68,13 @@ class ResponseParser
      */
     public static function encode(int $code, string $msg, array $data = []): string
     {
-        return MessagePack::pack([
+        $responseData = [
             'code' => $code,
             'msg' => $msg,
             'data' => $data,
-        ]);
+        ];
+
+        self::convertIntToString($responseData);
+        return MessagePack::pack($responseData);
     }
 }
