@@ -41,12 +41,30 @@ class Client
     }
 
     /**
+     * 强制把整形转成字符串
+     * @param $args
+     * @return void
+     */
+    protected function convertIntToString(&$args)
+    {
+        foreach ($args as &$arg) {
+            if (is_array($arg)) {
+                $this->convertIntToString($arg);
+            } else {
+                if (is_numeric($arg)) {
+                    $arg = (string)$arg;
+                }
+            }
+        }
+    }
+
+    /**
      * 请求数据
      * @param string $callFunc
      * @param array $arg
      * @return mixed
      */
-    public function request(string $callFunc, array $arg)
+    public function request(string $callFunc, array $args)
     {
         try {
             // 根据服务名获取服务地址
@@ -64,10 +82,11 @@ class Client
                     stream_set_timeout($resource, $timeout);
                 }
 
+                $this->convertIntToString($args);
                 $param = [
                     'class' => $class,
                     'method' => $method,
-                    'args' => $arg
+                    'args' => $args
                 ];
                 fwrite($resource, MessagePack::pack($param) . "\n");
                 $result = fgets($resource, 10240000);
