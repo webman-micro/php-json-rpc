@@ -82,7 +82,8 @@ class Client
                     stream_set_timeout($resource, $timeout);
                 }
 
-                $this->convertIntToString($args);
+                # 数字类型 10 会出现bug，主要传参使用 '10' 字符串类型
+                #$this->convertIntToString($args);
                 $param = [
                     'class' => $class,
                     'method' => $method,

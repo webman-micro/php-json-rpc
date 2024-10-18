@@ -74,7 +74,8 @@ class ResponseParser
             'data' => $data,
         ];
 
-        self::convertIntToString($responseData);
+        # 数字类型 10 会出现bug，主要传参使用 '10' 字符串类型
+        #self::convertIntToString($responseData);
         return MessagePack::pack($responseData);
     }
 }
